@@ -24,6 +24,8 @@ const ModuleNotFoundPlugin = require("react-dev-utils/ModuleNotFoundPlugin");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin-alt");
 const typescriptFormatter = require("react-dev-utils/typescriptFormatter");
 const createBabelLoader = require("./createBabelLoader");
+// const createBabelLoader = require("@expo/webpack-config/webpack/createBabelConfig");
+// const createBabelLoader = require("@expo/webpack-config/webpack/loaders/createBabelLoader");
 // Source maps are resource heavy and can cause out of memory issue for large source files.
 const shouldUseSourceMap = process.env.GENERATE_SOURCEMAP !== "false";
 // Some apps do not need the benefits of saving a web request, so not inlining the chunk
@@ -115,8 +117,11 @@ module.exports = function(webpackEnv) {
   const mode = isEnvProduction
     ? "production"
     : isEnvDevelopment && "development";
+  // const babelConfig = createBabelLoader(paths.appPath);
+
   const babelConfig = createBabelLoader({
-    mode
+    mode,
+    babelProjectRoot: paths.appPath
   });
 
   return {
@@ -268,9 +273,27 @@ module.exports = function(webpackEnv) {
         .map(ext => `.${ext}`)
         .filter(ext => useTypeScript || !ext.includes("ts")),
       alias: {
-        // Support React Native Web
-        // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
-        "react-native": "react-native-web"
+        // Alias direct react-native imports to react-native-web
+        "react-native$": "react-native-web",
+        // Add polyfills for modules that react-native-web doesn't support
+        // Depends on expo-asset
+        "react-native/Libraries/Image/AssetSourceResolver$":
+          "expo-asset/build/AssetSourceResolver",
+        "react-native/Libraries/Image/assetPathUtils$":
+          "expo-asset/build/Image/assetPathUtils",
+        "react-native/Libraries/Image/resolveAssetSource$":
+          "expo-asset/build/resolveAssetSource",
+        // Alias internal react-native modules to react-native-web
+        "react-native/Libraries/Components/View/ViewStylePropTypes$":
+          "react-native-web/dist/exports/View/ViewStylePropTypes",
+        "react-native/Libraries/EventEmitter/RCTDeviceEventEmitter$":
+          "react-native-web/dist/vendor/react-native/NativeEventEmitter/RCTDeviceEventEmitter",
+        "react-native/Libraries/vendor/emitter/EventEmitter$":
+          "react-native-web/dist/vendor/react-native/emitter/EventEmitter",
+        "react-native/Libraries/vendor/emitter/EventSubscriptionVendor$":
+          "react-native-web/dist/vendor/react-native/emitter/EventSubscriptionVendor",
+        "react-native/Libraries/EventEmitter/NativeEventEmitter$":
+          "react-native-web/dist/vendor/react-native/NativeEventEmitter"
       },
       plugins: [
         // Adds support for installing with Plug'n'Play, leading to faster installs and adding
